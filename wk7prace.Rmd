@@ -19,15 +19,14 @@ LondonWards <- st_read("/Users/martignoni/Documents/CASA/GIS/wk7/wk7prac/wk7data
 
 
 LondonWardsMerged <- st_read("/Users/martignoni/Documents/CASA/GIS/wk7/wk7prac/wk7data/London-wards-2018/London-wards-2018_ESRI/London_Ward_CityMerged.shp")%>%
-  st_transform(.,27700) %>% 
-  na.omit(LondonWardsMerged)
+  st_transform(.,27700)
 
 WardData <- read_csv("https://data.london.gov.uk/download/ward-profiles-and-atlas/772d2d64-e8c6-46cb-86f9-e52b4c7851bc/ward-profiles-excel-version.csv", locale = locale(encoding = "latin1"), na = c("NA", "n/a")) %>% 
   clean_names()
 
 LondonWardsMerged <- LondonWardsMerged %>% 
-  left_join(WardData, by = c("GSS_CODE" = "new_code")) %>% 
-  dplyr::distinct(GSS_CODE, .keep_all = T) %>% 
+  left_join(WardData, by = c("GSS_CODE" = "new_code"))%>%
+  dplyr::distinct(GSS_CODE, .keep_all = T)%>%
   dplyr::select(GSS_CODE, ward_name, average_gcse_capped_point_scores_2014)
 
 BluePlaques <- st_read("https://s3.eu-west-2.amazonaws.com/openplaques/open-plaques-london-2018-04-08.geojson") %>% 
@@ -111,7 +110,7 @@ Lward.lw <- LWard_nb %>%
 sum(Lward.lw)
 
 #row standardisation
-sum(Lward.lw[,1])
+sum(Lward.lw[1,])
 
 ```
 
@@ -201,22 +200,18 @@ tm_shape(points_sf_joined) + tm_polygons("density_G",  style="fixed", breaks=bre
 ```
 ## Working with Avg GCSE scores
 
-
 ```{r GCSE}
-LondonWardsMerged <- LondonWardsMerged %>% 
-  na.omit(LondonWardsMerged)
-
 I_LWard_Local_GCSE <- LondonWardsMerged %>%
   arrange(GSS_CODE) %>%
   pull(average_gcse_capped_point_scores_2014) %>%
   as.vector() %>%
-  localmoran(., Lward.lw)%>%
+  localmoran(., Lward.lw) %>%
   as_tibble()
 
 points_sf_joined <- points_sf_joined %>%
   arrange(gss_code)%>%
   mutate(GCSE_LocIz = as.numeric(I_LWard_Local_GCSE$Z.Ii))
 
-
+tm_shape(points_sf_joined) + tm_polygons("GCSE_LocIz", style="fixed", breaks=breaks1, palette=MoranColours, midpoint=NA, title="Local Moran's I, GCSE Scores")
 
 ```
